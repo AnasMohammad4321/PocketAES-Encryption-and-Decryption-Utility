@@ -26,7 +26,7 @@ This is a simple implementation of the AES encryption and decryption algorithm f
 
 Before you begin, ensure you have met the following requirements:
 
-- Python 3.x is installed on your machine.
+- Python3 is installed on your machine.
 
 ### Installation
 
