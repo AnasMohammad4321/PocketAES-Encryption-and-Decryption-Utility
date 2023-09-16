@@ -43,9 +43,9 @@ To set up this project, follow these steps:
 ## Usage
 
 To perform the PocketAES operation, run:
-    ```bash
-    python main.py
-    ```
+  ```bash
+  python main.py
+  ```
 
 ## License
 This project is licensed under the MIT License 
