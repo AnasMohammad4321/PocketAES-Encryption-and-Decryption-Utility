@@ -1,6 +1,7 @@
 """
     Mohammad Anas
     20L-1289
+    BDS-7A
     Assignment 1
     Information Security
 """
@@ -19,16 +20,16 @@ def textInput(text):
         str: A 4-character hexadecimal string entered by the user.
     """
     try:
-        textBlock = input(text)
-        textBlock = str(hex(int(textBlock, 16)))
-        textBlock = textBlock[2:]
-        while len(textBlock) < 4:
-            textBlock = '0' + textBlock
-        return textBlock
+        user_input = input(text)
+        hex_value = str(hex(int(user_input, 16)))
+        hex_value = hex_value[2:]
+        while len(hex_value) < 4:
+            hex_value = '0' + hex_value
+        return hex_value
     except Exception as e:
         print('Error:', e)
         raise SystemExit
-    
+
 def SubNibbles(input_hex, flag=True):
     """Perform SubNibbles operation on a 16-bit hexadecimal input.
 
@@ -81,10 +82,10 @@ def GenerateRoundKeys(input_key):
         input_key = int(input_key, 16)
 
     # Convert the integer input key to a 16-bit binary string with leading zeros
-    input_bin = bin(input_key)[2:].zfill(16)
+    input_binary = bin(input_key)[2:].zfill(16)
 
     # Split the binary string into nibbles (4-bit chunks)
-    w0, w1, w2, w3 = [int(input_bin[i:i + 4], 2) for i in range(0, len(input_bin), 4)]
+    w0, w1, w2, w3 = [int(input_binary[i:i + 4], 2) for i in range(0, len(input_binary), 4)]
     
     # Define Rcon constants
     Rcon1 = 0b1110
@@ -124,9 +125,9 @@ def ShiftRow(input_block_hex):
         str: A new 4-character hexadecimal string resulting from the row shift.
     """
     # Swap the first and third nibbles to perform the row shift
-    output_block_hex = input_block_hex[2] + input_block_hex[1] + input_block_hex[0] + input_block_hex[3]
+    swapped_block_hex = input_block_hex[2] + input_block_hex[1] + input_block_hex[0] + input_block_hex[3]
 
-    return output_block_hex
+    return swapped_block_hex
 
 def MultiplicationFiniteField(a, b):
     """
@@ -146,13 +147,12 @@ def MultiplicationFiniteField(a, b):
 
     while b > 0:
         if b & 1:  # Check if the least significant bit of b is 1
-            m ^= a  # XOR operation
-
-        a <<= 1  # Left shift a by 1 bit
+            m ^= a  
+        a <<= 1  
         if a & 0x10:  # Check if the 4th bit of a is set
-            a ^= 0x13  # XOR with irreducible polynomial x^4 + x + 1
+            a ^= 0x13  
 
-        b >>= 1  # Right shift b by 1 bit
+        b >>= 1  
 
     return m
 
@@ -175,51 +175,61 @@ def MixColumns(input_block, flag=True):
     d2 = (MultiplicationFiniteField(constant_matrix[0], input_block[2]) ^ MultiplicationFiniteField(constant_matrix[1], input_block[3]))
     d3 = (MultiplicationFiniteField(constant_matrix[2], input_block[2]) ^ MultiplicationFiniteField(constant_matrix[3], input_block[3]))
 
-    # Convert the result to a 4-character hexadecimal string
     output_block_hex = f"{d0:01x}{d1:01x}{d2:01x}{d3:01x}"
-
     return output_block_hex
 
-# Function to perform AddRoundKey operation on text block
-def AddRoundKey(textBlock, key):
-    temp = ''
+def AddRoundKey(text_block_hex, key_hex):
+    """
+    Perform the AddRoundKey operation on a 4-character hexadecimal string.
+
+    Args:
+        text_block_hex (str): A 4-character hexadecimal string representing a 16-bit value.
+        key_hex (str): A 4-character hexadecimal string representing a 16-bit key.
+
+    Returns:
+        str: A new 4-character hexadecimal string resulting from the XOR operation with the key.
+    """
+    result = ''
     for i in range(4):
-        val = int(textBlock[i],16) ^ int(key[i],16)
-        val = str(hex(val))
-        temp += val[2]
-    return temp
+        val = int(text_block_hex[i], 16) ^ int(key_hex[i], 16)
+        val_hex = hex(val)
+        result += val_hex[2]
+
+    return result
 
 if __name__ == "__main__":
-    print("Mohammad Anas\n20L-1289\nAssignment 1\nInformation Security")
     print("\n########################### D1\n")
 
-    number = textInput("Enter a text block: ")
-    print(f"SubNibbles({number}): {SubNibbles(number)}")
-    print(f"ShiftRow({number}): {ShiftRow(number)}")
-    print(f"MixColumns({number}): {MixColumns(number)}")
+    input_text_block = textInput("Enter a text block: ")
+    subnibbles_result = SubNibbles(input_text_block)
+    shiftrow_result = ShiftRow(input_text_block)
+    mixcolumns_result = MixColumns(input_text_block)
 
-    key = textInput("Enter a key:")
-    print(f"GenerateRoundKeys({key}): {GenerateRoundKeys(key)}")
+    print(f"SubNibbles({input_text_block}): {subnibbles_result}")
+    print(f"ShiftRow({input_text_block}): {shiftrow_result}")
+    print(f"MixColumns({input_text_block}): {mixcolumns_result}")
+
+    input_key = textInput("\nEnter a key: ")
+    k1, k2 = GenerateRoundKeys(input_key)
+    print(f"GenerateRoundKeys({input_key}): ({k1}, {k2})")
 
     #####################################################
 
     print("\n########################### D2\n")
-    cipherBlock = textInput('Enter the ciphertext block: ')
-    # cipherBlock = 'f3d7'
+    cipher_block = textInput('Enter the ciphertext block: ')
+    
+    input_key = textInput('Enter the key: ')
+    k1, k2 = GenerateRoundKeys(input_key)
 
-    key = textInput('Enter the key: ')
-    # key = '40ee'
-    k1, k2 = GenerateRoundKeys(key)
+    cipher_block = ShiftRow(cipher_block)
+    cipher_block = AddRoundKey(cipher_block, k2)
+    cipher_block = SubNibbles(cipher_block, False)
+    cipher_block = ShiftRow(cipher_block)
+    cipher_block = MixColumns(cipher_block, False)
+    cipher_block = AddRoundKey(cipher_block, k1)
+    cipher_block = SubNibbles(cipher_block, False)
 
-    cipherBlock = ShiftRow(cipherBlock)
-    cipherBlock = AddRoundKey(cipherBlock, k2)
-    cipherBlock = SubNibbles(cipherBlock, False)
-    cipherBlock = ShiftRow(cipherBlock)
-    cipherBlock = MixColumns(cipherBlock, False)
-    cipherBlock = AddRoundKey(cipherBlock, k1)
-    cipherBlock = SubNibbles(cipherBlock, False)
-
-    print(cipherBlock)
+    print('Decrypted block:', cipher_block)
 
     #####################################################
 
@@ -231,18 +241,16 @@ if __name__ == "__main__":
     except Exception as e:
         print("Error:", e)
         raise SystemExit
-    encryptedContent = file.read()
+    encrypted_content = file.read()
     file.close()
 
-    key = textInput('Enter the decryption key: ')
-    # key = '149c'
-    k1, k2 = GenerateRoundKeys(key)
+    decryption_key = textInput('Enter the decryption key: ')
+    k1, k2 = GenerateRoundKeys(decryption_key)
 
-    encryptedSubStrings = encryptedContent.split()
-    print(encryptedContent)
+    encrypted_substrings = encrypted_content.split()
 
-    decryptedSubStrings = []
-    for i in encryptedSubStrings:
+    decrypted_substrings = []
+    for i in encrypted_substrings:
         inter = ShiftRow(i)
         inter = AddRoundKey(inter, k2)
         inter = SubNibbles(inter, False)
@@ -250,23 +258,24 @@ if __name__ == "__main__":
         inter = MixColumns(inter, False)
         inter = AddRoundKey(inter, k1)
         inter = SubNibbles(inter, False)
-        decryptedSubStrings.append(inter)
+        decrypted_substrings.append(inter)
 
-    decryptedString = ' '.join(decryptedSubStrings)
+    decrypted_string = ' '.join(decrypted_substrings)
     try:
         file = open('plain.txt', "w")
-        file.write(decryptedString)
+        file.write(decrypted_string)
         file.close()
     except Exception as e:
         print('Error:', e)
 
-    decryptedContent = ''
-    for i in decryptedSubStrings:
-        decryptedContent += chr(int(i[:2],16))
-        # handling null padding (if exists)
-        if int(i[2:],16) != 0: decryptedContent += chr(int(i[2:],16))
+    decrypted_content = ''
+    for i in decrypted_substrings:
+        decrypted_content += chr(int(i[:2], 16))
+        # Handling null padding (if exists)
+        if int(i[2:], 16) != 0:
+            decrypted_content += chr(int(i[2:], 16))
 
     print('\nDecrypted Result')
     print('--------------------')
-    print(decryptedContent) # Gentlemen, you can't fight in here. This is the war room.
+    print(decrypted_content)  # Gentlemen, you can't fight in here. This is the war room.
     print('--------------------')
