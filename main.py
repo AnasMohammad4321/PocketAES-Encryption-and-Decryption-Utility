@@ -106,8 +106,84 @@ def GenerateRoundKeys(input_key):
 
     return K1_hex, K2_hex
 
-number = textInput("Enter a text block:")
-print(f"SubNibbles({number}):{SubNibbles(number)}")
+def ShiftRow(input_block_hex):
+    """
+    Perform the ShiftRow operation on a 4-character hexadecimal string, swapping the first and third nibbles.
+
+    Args:
+        input_block_hex (str): A 4-character hexadecimal string representing a 16-bit value.
+
+    Raises:
+        ValueError: If the input_block_hex does not have a length of 4 characters.
+
+    Returns:
+        str: A new 4-character hexadecimal string resulting from the row shift.
+    """
+    # Ensure the input_block_hex has a length of 4 characters
+    if len(input_block_hex) != 4:
+        raise ValueError("Input should be a 4-character hexadecimal string")
+
+    # Swap the first and third nibbles to perform the row shift
+    output_block_hex = input_block_hex[2] + input_block_hex[1] + input_block_hex[0] + input_block_hex[3]
+
+    return output_block_hex
+
+def MultiplicationFiniteField(a, b):
+    """
+    Multiplies two 4-bit numbers in the finite field GF(2^4) using the irreducible polynomial x^4 + x + 1.
+
+    Args:
+        a (int): The first 4-bit number.
+        b (int): The second 4-bit number.
+
+    Returns:
+        int: The product of a and b in the finite field GF(2^4).
+    """
+    
+    a = int(a, 16)
+    b = int(b, 16)
+    m = 0
+
+    while b > 0:
+        if b & 1:  # Check if the least significant bit of b is 1
+            m ^= a  # XOR operation
+
+        a <<= 1  # Left shift a by 1 bit
+        if a & 0x10:  # Check if the 4th bit of a is set
+            a ^= 0x13  # XOR with irreducible polynomial x^4 + x + 1
+
+        b >>= 1  # Right shift b by 1 bit
+
+    return m
+
+def MixColumns(input_block):
+    """
+    MixColumns operation in AES encryption.
+
+    Args:
+        input_block_hex (str): A 4-character hexadecimal string representing the input block.
+
+    Returns:
+        str: A 4-character hexadecimal string representing the result of the MixColumns operation.
+    """
+    constant_matrix = "1441"
+        
+    d0 = (MultiplicationFiniteField(constant_matrix[0], input_block[0]) ^ MultiplicationFiniteField(constant_matrix[1], input_block[1]))
+    d1 = (MultiplicationFiniteField(constant_matrix[2], input_block[0]) ^ MultiplicationFiniteField(constant_matrix[3], input_block[1]))
+    
+    d2 = (MultiplicationFiniteField(constant_matrix[0], input_block[2]) ^ MultiplicationFiniteField(constant_matrix[1], input_block[3]))
+    d3 = (MultiplicationFiniteField(constant_matrix[2], input_block[2]) ^ MultiplicationFiniteField(constant_matrix[3], input_block[3]))
+
+    # Convert the result to a 4-character hexadecimal string
+    output_block_hex = f"{d0:01x}{d1:01x}{d2:01x}{d3:01x}"
+
+    return output_block_hex
+
+
+number = textInput("Enter a text block: ")
+print(f"SubNibbles({number}): {SubNibbles(number)}")
+print(f"ShiftRow({number}): {ShiftRow(number)}")
+print(f"MixColumns({number}): {MixColumns(number)}")
 
 key = textInput("Enter a key:")
-print(f"GenerateRoundKeys({key}):{GenerateRoundKeys(key)}")
+print(f"GenerateRoundKeys({key}): {GenerateRoundKeys(key)}")
