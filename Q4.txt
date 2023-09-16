@@ -1,0 +1,7 @@
+Question: Analyze the encryption scheme discussed in Section B. Does it have any security flaws?
+
+Answer:
+
+If there's null padding in the message, it might make it easier for an attacker to predict the key using a brute-force approach. 
+This is because most of the other constants used in the encryption process, like the subNibblesTable and the constant matrix in the mixColumns algorithm, are publicly available. 
+Even if the sender changes keys for different messages, the presence of null padding can potentially compromise the security by providing an avenue for attackers to decrypt the entire message more easily.

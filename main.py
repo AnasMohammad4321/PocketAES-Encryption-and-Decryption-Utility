@@ -29,7 +29,7 @@ def textInput(text):
         print('Error:', e)
         raise SystemExit
     
-def SubNibbles(input_hex):
+def SubNibbles(input_hex, flag=True):
     """Perform SubNibbles operation on a 16-bit hexadecimal input.
 
     Args:
@@ -37,23 +37,30 @@ def SubNibbles(input_hex):
 
     Returns:
         str: The result of the SubNibbles operation as a 16-bit hexadecimal string.
-    """
+    """ 
+    
     if isinstance(input_hex, str):
         input_hex = int(input_hex, 16)
- 
+        
     input_bin = bin(input_hex)[2:].zfill(16)
     nibbles = [input_bin[i:i+4] for i in range(0, len(input_bin), 4)]
     
     substitution_table = {
-        '0000': '1010', '0001': '0000', '0010': '1001', '0011': '1110',
-        '0100': '0110', '0101': '0011', '0110': '1111', '0111': '0101',
-        '1000': '0001', '1001': '1101', '1010': '1100', '1011': '0111',
-        '1100': '1011', '1101': '0100', '1110': '0010', '1111': '1000'
-    }
+            '0000': '1010', '0001': '0000', '0010': '1001', '0011': '1110',
+            '0100': '0110', '0101': '0011', '0110': '1111', '0111': '0101',
+            '1000': '0001', '1001': '1101', '1010': '1100', '1011': '0111',
+            '1100': '1011', '1101': '0100', '1110': '0010', '1111': '1000'
+        }
+    inverse_substitution_table = {v: k for k, v in substitution_table.items()}
 
-    result_bin = ''.join([substitution_table[nibble] for nibble in nibbles])
-
-    return hex(int(result_bin, 2))
+    result_bin = ''.join([substitution_table[nibble] if flag else inverse_substitution_table[nibble] for nibble in nibbles])
+    result =  hex(int(result_bin, 2))
+    result = result[2:]
+    
+    if len(result) < 4:
+        result = result.zfill(4)
+        
+    return result
 
 def GenerateRoundKeys(input_key):
     """
@@ -112,17 +119,10 @@ def ShiftRow(input_block_hex):
 
     Args:
         input_block_hex (str): A 4-character hexadecimal string representing a 16-bit value.
-
-    Raises:
-        ValueError: If the input_block_hex does not have a length of 4 characters.
-
+        
     Returns:
         str: A new 4-character hexadecimal string resulting from the row shift.
     """
-    # Ensure the input_block_hex has a length of 4 characters
-    if len(input_block_hex) != 4:
-        raise ValueError("Input should be a 4-character hexadecimal string")
-
     # Swap the first and third nibbles to perform the row shift
     output_block_hex = input_block_hex[2] + input_block_hex[1] + input_block_hex[0] + input_block_hex[3]
 
@@ -156,7 +156,7 @@ def MultiplicationFiniteField(a, b):
 
     return m
 
-def MixColumns(input_block):
+def MixColumns(input_block, flag=True):
     """
     MixColumns operation in AES encryption.
 
@@ -166,7 +166,8 @@ def MixColumns(input_block):
     Returns:
         str: A 4-character hexadecimal string representing the result of the MixColumns operation.
     """
-    constant_matrix = "1441"
+    constant_matrix = "1441" if flag else "9229"
+
         
     d0 = (MultiplicationFiniteField(constant_matrix[0], input_block[0]) ^ MultiplicationFiniteField(constant_matrix[1], input_block[1]))
     d1 = (MultiplicationFiniteField(constant_matrix[2], input_block[0]) ^ MultiplicationFiniteField(constant_matrix[3], input_block[1]))
@@ -179,11 +180,93 @@ def MixColumns(input_block):
 
     return output_block_hex
 
+# Function to perform AddRoundKey operation on text block
+def AddRoundKey(textBlock, key):
+    temp = ''
+    for i in range(4):
+        val = int(textBlock[i],16) ^ int(key[i],16)
+        val = str(hex(val))
+        temp += val[2]
+    return temp
 
-number = textInput("Enter a text block: ")
-print(f"SubNibbles({number}): {SubNibbles(number)}")
-print(f"ShiftRow({number}): {ShiftRow(number)}")
-print(f"MixColumns({number}): {MixColumns(number)}")
+if __name__ == "__main__":
+    print("Mohammad Anas\n20L-1289\nAssignment 1\nInformation Security")
+    print("\n########################### D1\n")
 
-key = textInput("Enter a key:")
-print(f"GenerateRoundKeys({key}): {GenerateRoundKeys(key)}")
+    number = textInput("Enter a text block: ")
+    print(f"SubNibbles({number}): {SubNibbles(number)}")
+    print(f"ShiftRow({number}): {ShiftRow(number)}")
+    print(f"MixColumns({number}): {MixColumns(number)}")
+
+    key = textInput("Enter a key:")
+    print(f"GenerateRoundKeys({key}): {GenerateRoundKeys(key)}")
+
+    #####################################################
+
+    print("\n########################### D2\n")
+    cipherBlock = textInput('Enter the ciphertext block: ')
+    # cipherBlock = 'f3d7'
+
+    key = textInput('Enter the key: ')
+    # key = '40ee'
+    k1, k2 = GenerateRoundKeys(key)
+
+    cipherBlock = ShiftRow(cipherBlock)
+    cipherBlock = AddRoundKey(cipherBlock, k2)
+    cipherBlock = SubNibbles(cipherBlock, False)
+    cipherBlock = ShiftRow(cipherBlock)
+    cipherBlock = MixColumns(cipherBlock, False)
+    cipherBlock = AddRoundKey(cipherBlock, k1)
+    cipherBlock = SubNibbles(cipherBlock, False)
+
+    print(cipherBlock)
+
+    #####################################################
+
+    print('\n########################### D3\n')
+    file = None
+    try:
+        print('Reading encrypted file secret.txt...')
+        file = open('secret.txt', "r")
+    except Exception as e:
+        print("Error:", e)
+        raise SystemExit
+    encryptedContent = file.read()
+    file.close()
+
+    key = textInput('Enter the decryption key: ')
+    # key = '149c'
+    k1, k2 = GenerateRoundKeys(key)
+
+    encryptedSubStrings = encryptedContent.split()
+    print(encryptedContent)
+
+    decryptedSubStrings = []
+    for i in encryptedSubStrings:
+        inter = ShiftRow(i)
+        inter = AddRoundKey(inter, k2)
+        inter = SubNibbles(inter, False)
+        inter = ShiftRow(inter)
+        inter = MixColumns(inter, False)
+        inter = AddRoundKey(inter, k1)
+        inter = SubNibbles(inter, False)
+        decryptedSubStrings.append(inter)
+
+    decryptedString = ' '.join(decryptedSubStrings)
+    try:
+        file = open('plain.txt', "w")
+        file.write(decryptedString)
+        file.close()
+    except Exception as e:
+        print('Error:', e)
+
+    decryptedContent = ''
+    for i in decryptedSubStrings:
+        decryptedContent += chr(int(i[:2],16))
+        # handling null padding (if exists)
+        if int(i[2:],16) != 0: decryptedContent += chr(int(i[2:],16))
+
+    print('\nDecrypted Result')
+    print('--------------------')
+    print(decryptedContent) # Gentlemen, you can't fight in here. This is the war room.
+    print('--------------------')
